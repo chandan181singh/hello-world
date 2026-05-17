@@ -1,0 +1,72 @@
+## The problem
+
+Local complaint workflows (think: hostel issues, civic complaints, internal IT requests)
+are usually phone calls or paper forms — no audit trail, no SLAs, no transparency.
+Users don't know what happened to their request, and admins lose visibility into
+recurring issues.
+
+## What we built
+
+A full-stack web app called **Complaint Forum** — live at
+[helping-box.onrender.com](https://helping-box.onrender.com/) — where:
+
+- **Users** sign up with verified email, file complaints in named categories,
+  attach PDFs, and watch status updates in real time.
+- **Admins** triage complaints, post solutions, and mark them resolved.
+- **The dashboard** preserves every previous complaint with date/time and the
+  resolution that was posted, so users can always check back.
+
+Built as a 3-person team during college:
+
+- Chandan Kumar
+- Shivam Kumar
+- Shashwat Kapoor
+
+## Feature highlights
+
+### User side
+
+- Sign up / login / logout with email verification.
+- Password reset via expiring magic links.
+- File complaints — custom categories, free-form descriptions, **PDF attachments**.
+- View/edit profile, including email change.
+- Full complaint history with timestamps in the dashboard.
+- Edit or delete past complaints.
+- See status transitions live: *under process → reviewed → completed*.
+- View the admin-posted **solution** once a complaint is marked completed.
+- Rate the platform.
+
+### Admin side
+
+- Separate admin login + editable profile.
+- Dashboard with total + pending complaint counts at a glance.
+- Triage workflow — change status, post solutions, mark complaints completed.
+
+## Architecture choices
+
+- **Node.js + Express** for the HTTP layer; small, predictable, easy to deploy.
+- **MongoDB** for flexible complaint schema — fields evolve as categories appear,
+  but indexes on `status` and `category` keep lookups fast.
+- **EJS** for server-rendered pages — fast TTFB, no client-side framework needed for
+  this UX.
+- **Modular file layout** so adding a new complaint type or workflow stage is
+  one folder drop-in, not a rewrite.
+- **Render.com** for production hosting — free tier, auto-deploys from `main`.
+
+## What I learned
+
+- Extensibility is a *posture*, not a feature. A boring, modular layout beats a clever
+  abstraction six months later.
+- Workflow software lives or dies on its admin UX. Build for the people who use it 50
+  times a day, not the user who files one complaint.
+- Concurrency bugs hide in status transitions — write the state machine down first.
+- Free-tier hosting (Render) cold-starts the first hit. For internal tools that's fine.
+
+## Tech stack
+
+`Node.js` · `Express` · `MongoDB` · `JavaScript` · `EJS` · `CSS` · `HTML`
+
+## Links
+
+- **Live**: [helping-box.onrender.com](https://helping-box.onrender.com/)
+- **Source**: [chandan181singh/special-giggle](https://github.com/chandan181singh/special-giggle)

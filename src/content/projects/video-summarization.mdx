@@ -1,0 +1,61 @@
+## The problem
+
+Long-form video is the dominant content format online — recorded lectures, meetings,
+news, sports — but humans rarely have time to watch it end to end. A summary that
+captures the *informative* moments is far more useful than a fixed-length compression.
+
+The challenge: pick the few keyframes that preserve the story, not just visual variety.
+
+## The pipeline
+
+The full stack lives in
+[`chandan181singh/video-summarizer-using-encorder-decoder-and-pso`](https://github.com/chandan181singh/video-summarizer-using-encorder-decoder-and-pso)
+(MIT licensed). End-to-end it goes:
+
+1. **Shot segmentation** — KTS (Kernel Temporal Segmentation, [`kts.py`](https://github.com/chandan181singh/video-summarizer-using-encorder-decoder-and-pso/blob/main/kts.py)) breaks the input into change-point shots.
+2. **Feature extraction** — A ResNet ([`feature_extraction.py`](https://github.com/chandan181singh/video-summarizer-using-encorder-decoder-and-pso/blob/main/feature_extraction.py)) produces a dense embedding per frame.
+3. **Encoder–decoder** — A BiLSTM encoder consumes the embeddings; the decoder uses either **Bahdanau** ([`bahdanau_attention.py`](https://github.com/chandan181singh/video-summarizer-using-encorder-decoder-and-pso/blob/main/bahdanau_attention.py)) or **Luong** ([`luong_attention.py`](https://github.com/chandan181singh/video-summarizer-using-encorder-decoder-and-pso/blob/main/luong_attention.py)) attention to score frame importance.
+4. **Selection** — A 0/1 knapsack ([`knapsack.py`](https://github.com/chandan181singh/video-summarizer-using-encorder-decoder-and-pso/blob/main/knapsack.py)) picks the highest-value shots that fit a length budget.
+5. **Hyperparameter search** — Particle Swarm Optimization tunes LSTM hidden size, attention dropout, and learning rate to maximize F-score.
+
+```python
+# Luong (dot) attention — sketch
+scores = decoder_h @ encoder_outputs.transpose(-1, -2)   # (B, T_dec, T_enc)
+weights = softmax(scores, dim=-1)
+context = weights @ encoder_outputs                       # (B, T_dec, H)
+```
+
+## Why two attentions?
+
+Bahdanau (additive) and Luong (multiplicative) make different speed/quality
+trade-offs. Comparing them on the same encoder lets me pick a winner per dataset
+instead of trusting whatever the paper-of-the-week says.
+
+## What worked
+
+- **Bidirectional context** boosted F-score noticeably over a vanilla LSTM — the past
+  *and* future of a frame both matter when ranking it.
+- **Knapsack-based selection** beats greedy top-k by respecting shot lengths, so the
+  final summary fits the target duration exactly.
+- **PSO over grid search** converged faster on a usable hyperparameter region with
+  less compute, especially for the dropout/learning-rate combo.
+- **KTS pre-segmentation** kept training tractable on long inputs — instead of feeding
+  thousands of frames, the model sees compressed shot-level sequences.
+
+## What I learned
+
+- Attention is not magic; the *features* you attend over matter more.
+- Reproducibility of ML research is hard — pinning seeds, dataset splits, and ResNet
+  pre-trained weights was half the battle.
+- A clean evaluation harness pays back tenfold when iterating on architectures.
+
+## Tech stack
+
+`Python` · `PyTorch` · `BiLSTM` · `Bahdanau Attention` · `Luong Attention` · `PSO` · `KTS` · `Knapsack` · `OpenCV` · `ResNet` · `NumPy` · `Pandas`
+
+## Datasets
+
+Trained and evaluated on **SumMe** and **TVSum** — the standard benchmarks for
+video summarization. Metrics plots live in the repo
+([SumMe](https://github.com/chandan181singh/video-summarizer-using-encorder-decoder-and-pso/blob/main/metrics_SumMe.png),
+[TVSum](https://github.com/chandan181singh/video-summarizer-using-encorder-decoder-and-pso/blob/main/metrics_TVSum.png)).
