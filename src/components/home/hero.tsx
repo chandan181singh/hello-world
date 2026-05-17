@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Download, MapPin, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -170,24 +171,29 @@ function HeroAvatar() {
         }}
       />
       <div
-        className="glow-card relative grid h-full place-items-center overflow-hidden rounded-[2rem] p-8"
+        className="glow-card relative grid h-full place-items-center overflow-hidden rounded-[2rem] p-6"
         style={{
           background:
             "linear-gradient(135deg, color-mix(in oklab, var(--card) 95%, transparent), color-mix(in oklab, var(--card) 100%, transparent))",
         }}
       >
         <div className="noise" />
-        <div className="relative z-10 text-center">
+        <div className="relative z-10 flex h-full w-full flex-col items-center justify-center">
           <div
-            className="mx-auto grid h-32 w-32 place-items-center rounded-full font-display text-5xl font-bold text-white shadow-2xl"
+            className="relative aspect-square w-full max-w-[260px] overflow-hidden rounded-full ring-4 ring-white/10 shadow-2xl"
             style={{
-              background:
-                "linear-gradient(135deg,#a855f7,#ec4899 50%,#06b6d4)",
               boxShadow:
                 "0 0 60px -4px rgba(168,85,247,0.45), inset 0 1px 0 rgba(255,255,255,0.2)",
             }}
           >
-            {site.initials}
+            <Image
+              src="/chandan.png"
+              alt={site.name}
+              fill
+              priority
+              sizes="(min-width: 768px) 260px, 200px"
+              className="object-cover"
+            />
           </div>
           <div className="mt-5 font-display text-xl font-semibold">
             {site.name}
