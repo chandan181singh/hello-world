@@ -9,62 +9,27 @@ type Props = {
   term?: string;
 };
 
-/**
- * Guestbook / comments powered by Giscus (GitHub Discussions).
- *
- * To finish setup:
- *   1. Go to https://giscus.app and select Chandan's repo (e.g. chandan181singh/portfolio-comments).
- *   2. Enable Discussions on that repo and install the Giscus app.
- *   3. Copy the data-repo-id, data-category, data-category-id values it generates.
- *   4. Add them to .env.local as NEXT_PUBLIC_GISCUS_REPO_ID etc. (defaults below are placeholders).
- *
- * The widget gracefully shows a setup hint while env vars are missing.
- */
+const GISCUS_CONFIG = {
+  repo: "chandan181singh/hello-world-comments" as `${string}/${string}`,
+  repoId: "R_kgDOSgOo-g",
+  category: "General",
+  categoryId: "DIC_kwDOSgOo-s4C9Q5U",
+};
+
 export function GuestbookGiscus({ mapping = "specific", term = "guestbook" }: Props) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
-  const repo = process.env.NEXT_PUBLIC_GISCUS_REPO as `${string}/${string}` | undefined;
-  const repoId = process.env.NEXT_PUBLIC_GISCUS_REPO_ID;
-  const category = process.env.NEXT_PUBLIC_GISCUS_CATEGORY;
-  const categoryId = process.env.NEXT_PUBLIC_GISCUS_CATEGORY_ID;
-
-  if (!repo || !repoId || !category || !categoryId) {
-    return (
-      <div className="rounded-2xl border border-dashed border-[var(--border)] p-6 text-sm text-[var(--muted-foreground)]">
-        <p>
-          The guestbook is powered by{" "}
-          <a
-            href="https://giscus.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gradient-static underline underline-offset-4"
-          >
-            Giscus
-          </a>{" "}
-          (GitHub Discussions). Add the following env vars in{" "}
-          <code className="font-mono text-xs">.env.local</code> to activate it:
-        </p>
-        <pre className="mt-3 overflow-x-auto rounded-lg bg-[var(--muted)] p-3 font-mono text-[11px]">
-          NEXT_PUBLIC_GISCUS_REPO=owner/repo{"\n"}
-          NEXT_PUBLIC_GISCUS_REPO_ID=R_xxx{"\n"}
-          NEXT_PUBLIC_GISCUS_CATEGORY=General{"\n"}
-          NEXT_PUBLIC_GISCUS_CATEGORY_ID=DIC_xxx
-        </pre>
-      </div>
-    );
-  }
 
   if (!mounted) return null;
 
   return (
     <Giscus
       id="comments"
-      repo={repo}
-      repoId={repoId}
-      category={category}
-      categoryId={categoryId}
+      repo={GISCUS_CONFIG.repo}
+      repoId={GISCUS_CONFIG.repoId}
+      category={GISCUS_CONFIG.category}
+      categoryId={GISCUS_CONFIG.categoryId}
       mapping={mapping}
       term={term}
       reactionsEnabled="1"
