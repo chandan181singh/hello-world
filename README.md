@@ -20,7 +20,7 @@
 ## Features
 
 - Animated aurora gradient background that follows the cursor
-- Custom cursor with magnetic ring and lime dot accent
+- Decorative glowing ring that trails the cursor (native cursor stays for zero lag)
 - Page transition animations between routes
 - Scroll progress indicator
 - Command palette (⌘K / Ctrl+K)
@@ -69,22 +69,16 @@ To **add a blog post**: just create `src/content/blog/my-post.mdx` with frontmat
 
 To **change the color palette**: edit the CSS variables in `src/app/globals.css` (look for `--color-primary` etc.). They cascade through the whole site.
 
-## Guestbook setup (Giscus)
+## Guestbook & Comments (Giscus)
 
-The guestbook + comments work after a 2-minute setup:
+The guestbook and blog post comments are powered by [Giscus](https://giscus.app) — a GitHub Discussions-backed comment system with zero backend. The config is hardcoded in `src/components/widgets/guestbook-giscus.tsx` pointing to [`chandan181singh/hello-world-comments`](https://github.com/chandan181singh/hello-world-comments).
 
-1. Visit [giscus.app](https://giscus.app) and pick a public repo (a comments-only repo works great, e.g. `chandan181singh/portfolio-comments`).
-2. Enable Discussions on that repo and install the Giscus GitHub App.
-3. Copy the four values it generates and put them in a `.env.local`:
+To use your own repo:
 
-```bash
-NEXT_PUBLIC_GISCUS_REPO=chandan181singh/portfolio-comments
-NEXT_PUBLIC_GISCUS_REPO_ID=R_xxx
-NEXT_PUBLIC_GISCUS_CATEGORY=General
-NEXT_PUBLIC_GISCUS_CATEGORY_ID=DIC_xxx
-```
-
-Until then the guestbook shows a friendly setup placeholder instead.
+1. Create a public repo and enable Discussions on it.
+2. Install the [Giscus GitHub App](https://github.com/apps/giscus) on that repo.
+3. Go to [giscus.app](https://giscus.app), select your repo, and copy the generated values.
+4. Update the `GISCUS_CONFIG` object in `src/components/widgets/guestbook-giscus.tsx`.
 
 ## Deployment
 
