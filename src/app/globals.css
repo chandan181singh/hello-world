@@ -110,13 +110,7 @@
     border-radius: 4px;
   }
 
-  /* Disable native cursor on devices that get our custom cursor */
-  @media (pointer: fine) {
-    .cursor-fancy,
-    .cursor-fancy * {
-      cursor: none;
-    }
-  }
+  /* Native cursor stays visible; the custom ring is purely decorative. */
 }
 
 @layer utilities {

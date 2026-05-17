@@ -4,17 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 
 /**
- * Soft glowing dot + ring that follows the cursor.
- * Hidden on touch devices via media query, ignores reduced motion users.
+ * Decorative glowing ring that trails the cursor.
+ * Native cursor remains visible — this is purely cosmetic.
+ * Hidden on touch devices and for reduced-motion users.
  */
 export function CursorFollower() {
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
-  // Tight, responsive springs — ring trails slightly, dot is near 1:1 with cursor.
-  const ringX = useSpring(x, { stiffness: 700, damping: 40, mass: 0.3 });
-  const ringY = useSpring(y, { stiffness: 700, damping: 40, mass: 0.3 });
-  const dotX = useSpring(x, { stiffness: 1500, damping: 60, mass: 0.1 });
-  const dotY = useSpring(y, { stiffness: 1500, damping: 60, mass: 0.1 });
+  const ringX = useSpring(x, { stiffness: 900, damping: 45, mass: 0.15 });
+  const ringY = useSpring(y, { stiffness: 900, damping: 45, mass: 0.15 });
   const [hovering, setHovering] = useState(false);
   const enabled = useRef(true);
 
@@ -25,8 +23,6 @@ export function CursorFollower() {
     const coarse = window.matchMedia("(pointer: coarse)").matches;
     enabled.current = !reduced && !coarse;
     if (!enabled.current) return;
-
-    document.documentElement.classList.add("cursor-fancy");
 
     const move = (e: MouseEvent) => {
       x.set(e.clientX);
@@ -44,7 +40,6 @@ export function CursorFollower() {
     document.addEventListener("mouseout", leave);
 
     return () => {
-      document.documentElement.classList.remove("cursor-fancy");
       window.removeEventListener("mousemove", move);
       document.removeEventListener("mouseover", enter);
       document.removeEventListener("mouseout", leave);
@@ -58,47 +53,28 @@ export function CursorFollower() {
   }
 
   return (
-    <>
+    <motion.div
+      className="pointer-events-none fixed top-0 left-0 z-[9999] hidden md:block"
+      style={{
+        x: ringX,
+        y: ringY,
+        translateX: "-50%",
+        translateY: "-50%",
+      }}
+    >
       <motion.div
-        className="pointer-events-none fixed top-0 left-0 z-[9999] hidden md:block"
-        style={{
-          x: ringX,
-          y: ringY,
-          translateX: "-50%",
-          translateY: "-50%",
+        animate={{
+          scale: hovering ? 1.6 : 1,
+          opacity: hovering ? 0.5 : 0.35,
         }}
-      >
-        <motion.div
-          animate={{
-            scale: hovering ? 1.8 : 1,
-            opacity: hovering ? 0.4 : 0.6,
-          }}
-          transition={{ type: "spring", stiffness: 300, damping: 22 }}
-          className="h-9 w-9 rounded-full border-2"
-          style={{
-            borderColor: "color-mix(in oklab, var(--color-primary) 70%, transparent)",
-            boxShadow:
-              "0 0 18px color-mix(in oklab, var(--color-primary) 45%, transparent)",
-          }}
-        />
-      </motion.div>
-      <motion.div
-        className="pointer-events-none fixed top-0 left-0 z-[9999] hidden md:block"
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        className="h-7 w-7 rounded-full border"
         style={{
-          x: dotX,
-          y: dotY,
-          translateX: "-50%",
-          translateY: "-50%",
+          borderColor: "color-mix(in oklab, var(--color-primary) 50%, transparent)",
+          boxShadow:
+            "0 0 10px color-mix(in oklab, var(--color-primary) 20%, transparent)",
         }}
-      >
-        <div
-          className="h-2 w-2 rounded-full"
-          style={{
-            background: "var(--color-lime)",
-            boxShadow: "0 0 12px var(--color-lime)",
-          }}
-        />
-      </motion.div>
-    </>
+      />
+    </motion.div>
   );
 }
