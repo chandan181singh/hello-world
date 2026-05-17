@@ -1,0 +1,170 @@
+---
+title: "Attention from scratch — what I actually learned building a video summarizer"
+description: "Bahdanau vs Luong attention in plain English, with the parts the papers usually leave out, drawn from my video summarization project."
+date: 2025-09-04
+tags: [ml, deep-learning, pytorch, attention]
+published: true
+---
+
+For my final-year project I built a [video summarization
+model](/projects/video-summarization) — a BiLSTM encoder–decoder with attention,
+tuned end-to-end with Particle Swarm Optimization. The attention math was the
+part I struggled with the most going in, and the part that taught me the most
+once I implemented it twice (once Bahdanau, once Luong) and stared at the
+gradients for a while.
+
+This is the explanation I'd give past-me.
+
+## Why attention exists at all
+
+A vanilla encoder–decoder squeezes the entire input sequence into a single
+fixed-size context vector — the encoder's last hidden state — and the decoder
+has to do *all* its work from that single summary. For short sequences that is
+fine. For a 30-minute video with 5,000+ frame embeddings, it is hilariously
+lossy.
+
+Attention solves this with one simple idea:
+
+> Don't make the decoder rely on one summary. At every output step, let it
+> *look back* at the encoder's hidden states and **decide for itself** which
+> ones matter right now.
+
+That "decide for itself" is a tiny neural network that produces a probability
+distribution over the input positions. The decoder gets a fresh, weighted
+average of encoder states each time it generates an output. That's it. That's
+the whole trick.
+
+## The shapes that finally made it click
+
+Half my confusion was just keeping the matrix shapes straight. Here's the
+cheat sheet I taped to my monitor:
+
+```
+encoder_outputs   : (B, T_enc, H_enc)     all encoder hidden states
+decoder_h_t       : (B, H_dec)            decoder hidden state at step t
+
+scores            : (B, T_enc)            one score per input position
+weights           : (B, T_enc)            softmax(scores), sums to 1
+context_t         : (B, H_enc)            weights · encoder_outputs
+```
+
+`B` is batch size, `T_enc` is the number of input positions, `H_*` are hidden
+dimensions. **The output of attention is always a single context vector per
+batch element per decoder step.** Get that one thing right and everything else
+falls into place.
+
+## Bahdanau (additive) attention
+
+Bahdanau et al. (2015) compute the score with a tiny feed-forward network:
+
+```
+score(h_dec, h_enc_i) = vᵀ · tanh(W_dec · h_dec + W_enc · h_enc_i)
+```
+
+In PyTorch:
+
+```python
+import torch
+import torch.nn as nn
+
+class BahdanauAttention(nn.Module):
+    def __init__(self, dec_hidden, enc_hidden, attn_hidden=128):
+        super().__init__()
+        self.W_dec = nn.Linear(dec_hidden, attn_hidden, bias=False)
+        self.W_enc = nn.Linear(enc_hidden, attn_hidden, bias=False)
+        self.v     = nn.Linear(attn_hidden, 1, bias=False)
+
+    def forward(self, h_dec, encoder_outputs):
+        # h_dec: (B, H_dec) ; encoder_outputs: (B, T, H_enc)
+        h_dec = h_dec.unsqueeze(1)                                # (B, 1, H_dec)
+        e = torch.tanh(self.W_dec(h_dec) + self.W_enc(encoder_outputs))
+        scores  = self.v(e).squeeze(-1)                           # (B, T)
+        weights = torch.softmax(scores, dim=-1)                   # (B, T)
+        context = (weights.unsqueeze(-1) * encoder_outputs).sum(1)  # (B, H_enc)
+        return context, weights
+```
+
+The strength of Bahdanau is **expressivity** — the `tanh + v` layer can learn
+arbitrary scoring functions. The cost is **three matrix multiplies per
+decoder step**.
+
+## Luong (multiplicative) attention
+
+Luong et al. (2015) replace the tiny network with a dot product. The
+"general" variant is the one I used:
+
+```
+score(h_dec, h_enc_i) = h_decᵀ · W · h_enc_i
+```
+
+```python
+class LuongGeneralAttention(nn.Module):
+    def __init__(self, dec_hidden, enc_hidden):
+        super().__init__()
+        self.W = nn.Linear(enc_hidden, dec_hidden, bias=False)
+
+    def forward(self, h_dec, encoder_outputs):
+        # h_dec: (B, H_dec) ; encoder_outputs: (B, T, H_enc)
+        proj = self.W(encoder_outputs)                            # (B, T, H_dec)
+        scores  = torch.bmm(proj, h_dec.unsqueeze(-1)).squeeze(-1)  # (B, T)
+        weights = torch.softmax(scores, dim=-1)
+        context = (weights.unsqueeze(-1) * encoder_outputs).sum(1)
+        return context, weights
+```
+
+The strength of Luong is **speed** — one matrix multiply per step, no `tanh`,
+fewer params. It also feels less like a black box: the score is literally how
+much the decoder hidden state agrees with each encoder hidden state.
+
+## What actually mattered when training
+
+On the SumMe and TVSum datasets — small, noisy, fewer than 50 videos each —
+the two attentions ended up surprisingly close on F-score. Bahdanau was a
+hair better on TVSum, Luong a hair better on SumMe. **Neither difference was
+big enough to obsess over.**
+
+The things that *did* move the needle were:
+
+- **Bidirectional encoder.** Going from LSTM to BiLSTM gave me a bigger
+  F-score bump than swapping attentions. Past and future context both
+  matter for ranking a frame.
+- **Length-aware selection.** Replacing greedy top-k with a 0/1 knapsack
+  over shot lengths kept summaries exactly inside the length budget. Without
+  that, the model "cheats" by picking lots of cheap frames.
+- **PSO over manual grid search.** Hyperparameters like attention dropout,
+  LSTM hidden size, and learning rate interact in non-obvious ways. Letting
+  PSO explore the joint space saved hours of guess-and-check.
+
+## The bug that taught me the most
+
+For two days I had a model whose attention weights converged to a near-uniform
+distribution — basically averaging every frame instead of picking the
+important ones. F-score sat at chance.
+
+Turned out my softmax was happening over the wrong dimension. `dim=-1` *looks*
+right but if your tensor shape is `(B, H, T)` instead of `(B, T)`, you are
+softmaxing across hidden units, not positions. The model can still train, just
+to a deeply silly local optimum.
+
+Moral: **print the shape of every intermediate tensor in attention code at
+least once.** Even if you "know" it. Especially if you "know" it.
+
+## When you should reach for attention
+
+The honest answer is: less often than the literature suggests. Attention is
+the right tool when:
+
+- Your input is long and the relevance of input positions varies sharply with
+  the output position. Translation, summarization, retrieval-augmented
+  generation — yes.
+- You need interpretability. Attention weights are at least *suggestive* of
+  what the model is looking at, which is more than most layers give you.
+
+For tabular data, short sequences, or anything where a simple aggregation
+already wins, plain pooling beats attention on simplicity, speed, and
+overfitting risk.
+
+The shiny tool is not always the right tool. Building this project was the
+moment that finally sunk in for me.
+
+— Chandan

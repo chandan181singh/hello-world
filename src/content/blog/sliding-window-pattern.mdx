@@ -1,0 +1,138 @@
+---
+title: "The sliding window pattern, finally explained the way I wish someone had told me"
+description: "A no-nonsense walk-through of fixed and variable-size sliding windows, the LeetCode problems they crack, and a mental model that survives interviews."
+date: 2025-08-12
+tags: [dsa, algorithms, leetcode, interview]
+published: true
+---
+
+When I started grinding LeetCode in second year, the *sliding window* pattern was the first one
+that made me feel like I had a superpower. Suddenly a chunk of problems that I would have
+brute-forced in O(n²) collapsed into clean O(n) one-pass solutions.
+
+The trouble is, most tutorials throw a string of problems at you and call it a day. This post
+is the explanation I wish someone had handed me on day one.
+
+## The mental model
+
+A sliding window is just two pointers — `left` and `right` — that delimit a contiguous
+sub-array (or sub-string), plus some state that summarizes what is inside that window.
+
+Every algorithm in this family follows the same shape:
+
+```python
+left = 0
+state = empty_state()
+
+for right in range(len(arr)):
+    add(arr[right], state)               # 1. expand
+
+    while not is_valid(state):           # 2. shrink while invalid
+        remove(arr[left], state)
+        left += 1
+
+    update_answer(state, left, right)    # 3. record best
+```
+
+Everything else — the array, the string, the constraint — is detail. Get those three steps
+into muscle memory and 80% of sliding-window problems become spot-the-pattern.
+
+## Fixed-size vs variable-size
+
+Sliding-window problems come in two flavors.
+
+### Fixed size — the window length is given
+
+> *"Find the maximum sum sub-array of length k."*
+
+The window never grows or shrinks; it just slides. Add the new element, drop the leftmost,
+update the answer.
+
+```python
+def max_sum_k(arr, k):
+    s = sum(arr[:k])
+    best = s
+    for right in range(k, len(arr)):
+        s += arr[right] - arr[right - k]   # add new, drop old
+        best = max(best, s)
+    return best
+```
+
+One pass, O(n) time, O(1) extra space. Beautiful.
+
+### Variable size — the window grows until it breaks a constraint, then shrinks
+
+> *"Longest sub-array with sum ≤ S."*
+> *"Longest sub-string with at most K distinct characters."*
+
+This is the more interesting case and it's where most people get lost. The trick is to
+**always expand by one on the right, and shrink only while the window is invalid**.
+
+```python
+def longest_at_most_k_distinct(s: str, k: int) -> int:
+    from collections import defaultdict
+    count = defaultdict(int)
+    left = best = 0
+
+    for right, ch in enumerate(s):
+        count[ch] += 1                # expand
+
+        while len(count) > k:         # shrink while invalid
+            count[s[left]] -= 1
+            if count[s[left]] == 0:
+                del count[s[left]]
+                left += 1
+            else:
+                left += 1
+
+        best = max(best, right - left + 1)
+
+    return best
+```
+
+Notice how `right` only ever moves forward. `left` only ever moves forward too. Each element
+is visited at most twice across the whole run — once when entering the window, once when
+leaving — which is what makes the whole thing O(n).
+
+## Five problems that beat this into me
+
+Solve them in this order. Each one adds one twist.
+
+| # | Problem | What it teaches |
+|---|---------|-----------------|
+| 1 | [Maximum Average Subarray I](https://leetcode.com/problems/maximum-average-subarray-i/) | Fixed size, the cleanest possible warmup |
+| 2 | [Longest Substring Without Repeating Characters](https://leetcode.com/problems/longest-substring-without-repeating-characters/) | Variable size + a set as state |
+| 3 | [Minimum Window Substring](https://leetcode.com/problems/minimum-window-substring/) | Counting state + "shrink to the smallest valid window" |
+| 4 | [Sliding Window Maximum](https://leetcode.com/problems/sliding-window-maximum/) | When the state needs a monotonic deque, not a counter |
+| 5 | [Subarray Product Less Than K](https://leetcode.com/problems/subarray-product-less-than-k/) | Counting sub-arrays, not lengths — slight twist on `update_answer` |
+
+After these five, you'll see sliding windows everywhere — *anywhere a problem asks for the
+longest, shortest, or count of contiguous things under some constraint.*
+
+## The traps I kept falling into
+
+1. **Forgetting that `left` must also move monotonically.** If your while-loop ever needs to
+   *go back*, it is not a sliding window. You probably want binary search on the window size
+   or a different pattern entirely.
+2. **Overcomplicating the state.** For most problems a `defaultdict(int)` plus one running
+   count (number of distinct keys, sum, max-frequency) is enough. Resist the urge to keep
+   the entire sub-array in memory.
+3. **Updating the answer in the wrong place.** Update *after* the window is made valid
+   again, not in the middle of the shrink loop, or you'll record windows that broke the
+   constraint.
+4. **`while` vs `if` for shrinking.** Always `while`. A single removal might not be enough to
+   restore validity (look at problem #3 above for the canonical example).
+
+## Why this pattern matters past interviews
+
+I use the sliding-window shape at work all the time without calling it that — every time I
+want to compute a rolling p99 over the last *N* requests, scan a log file for bursts inside
+a time window, or compress a streaming dataset on the fly. The pattern outlives the LeetCode
+grind.
+
+It is also, in my experience, the *fastest* pattern to spot in an interview. If the problem
+mentions "contiguous", "consecutive", "sub-array", or "window", train yourself to ask
+*"can I solve this with two pointers and one state?"* before reaching for anything else. You'll
+save yourself a lot of time and a lot of whiteboard.
+
+— Chandan

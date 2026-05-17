@@ -10,10 +10,11 @@ import { motion, useMotionValue, useSpring } from "framer-motion";
 export function CursorFollower() {
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
-  const ringX = useSpring(x, { stiffness: 200, damping: 24, mass: 0.6 });
-  const ringY = useSpring(y, { stiffness: 200, damping: 24, mass: 0.6 });
-  const dotX = useSpring(x, { stiffness: 500, damping: 30 });
-  const dotY = useSpring(y, { stiffness: 500, damping: 30 });
+  // Tight, responsive springs — ring trails slightly, dot is near 1:1 with cursor.
+  const ringX = useSpring(x, { stiffness: 700, damping: 40, mass: 0.3 });
+  const ringY = useSpring(y, { stiffness: 700, damping: 40, mass: 0.3 });
+  const dotX = useSpring(x, { stiffness: 1500, damping: 60, mass: 0.1 });
+  const dotY = useSpring(y, { stiffness: 1500, damping: 60, mass: 0.1 });
   const [hovering, setHovering] = useState(false);
   const enabled = useRef(true);
 

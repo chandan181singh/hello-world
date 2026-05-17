@@ -1,0 +1,185 @@
+---
+title: "Building auth without tears — five lessons from shipping a real complaint forum"
+description: "Email verification, password resets, role-based access — the stuff every web app needs and almost every tutorial gets slightly wrong. Notes from shipping Complaint Forum to production."
+date: 2025-10-22
+tags: [web, backend, nodejs, security]
+published: true
+---
+
+In 2022 three of us built [Complaint Forum](/projects/complaint-box) — a small
+full-stack web app for filing and triaging daily-life complaints. It's still
+running in production on a free Render dyno, which means it has now been a
+year of strangers actually using the auth I wrote.
+
+Here is what I'd do differently if I started today. It's the stuff you will
+not find in most "build a MERN app" tutorials — the boring, important parts
+that decide whether your app falls over the first time someone forgets their
+password at 2 a.m.
+
+## 1. A session is a contract, not a string
+
+The first version of our auth stored the user id in a session cookie and
+trusted it. That works fine until you need to invalidate sessions — when a
+user resets their password, when an admin gets demoted, when a phone gets
+stolen.
+
+The mental model that fixed it: **a session is a row in your database with
+an expiry, a user id, and a revoked flag**. The cookie is just a pointer to
+that row.
+
+```js
+// minimal session schema
+{
+  _id: ObjectId,          // session id, cryptographically random
+  userId: ObjectId,
+  createdAt: Date,
+  expiresAt: Date,        // hard limit, e.g. 30 days
+  revokedAt: Date | null, // set on logout / password reset
+  userAgent: String,      // for the "active sessions" page
+  ip: String              // for security alerts
+}
+```
+
+Now logout is a single `UPDATE`, "log out of all devices" is one extra
+`UPDATE`, and you can show the user a list of where they are signed in
+without doing anything fancy.
+
+The cookie itself should be `HttpOnly`, `Secure`, `SameSite=Lax`. If you set
+nothing else, set these.
+
+## 2. Email verification needs to be idempotent
+
+Our first verification flow had this exact bug: a user clicks the link, it
+hits the endpoint, we mark them verified and redirect. Then the user's email
+client *also* prefetches the link for spam scanning, which hits the endpoint
+again, finds the token already used, and shows "invalid link". The user
+panics and emails support.
+
+The fix is to design every "consume this token" endpoint as **idempotent**:
+
+```js
+// Bad
+const token = await Token.findOneAndDelete({ value: t })
+if (!token) return res.status(400).render('invalid')
+
+// Better
+const token = await Token.findOne({ value: t, kind: 'email-verify' })
+if (!token) return res.status(400).render('invalid')
+if (token.consumedAt) {
+  // already used — but the user *did* verify, so treat it as success
+  return res.redirect('/dashboard?verified=1')
+}
+if (token.expiresAt < new Date()) {
+  return res.status(400).render('expired')
+}
+await Token.updateOne({ _id: token._id }, { consumedAt: new Date() })
+await User.updateOne({ _id: token.userId }, { emailVerified: true })
+return res.redirect('/dashboard?verified=1')
+```
+
+Same applies to password reset tokens. Hitting a consumed reset link should
+either silently succeed or send you to the login page — never a scary error.
+
+## 3. Role checks belong in two places
+
+Our admin dashboard was protected by a middleware that checked
+`req.session.role === 'admin'`. We pushed it out. A week later a user with a
+crafted URL accessed an admin-only API route because the middleware was
+mounted on `/admin/*` but the API lived under `/api/*`.
+
+Lesson: **route-level middleware is necessary but not sufficient**. Every
+handler that does something sensitive should also re-check authorization
+against the actual resource:
+
+```js
+// in the route file
+app.post('/api/complaints/:id/resolve',
+  requireSession,
+  requireRole('admin'),                // first line of defense
+  async (req, res) => {
+    const c = await Complaint.findById(req.params.id)
+    if (!c) return res.status(404).end()
+
+    // second line of defense — would still fail closed
+    // even if requireRole was somehow bypassed
+    if (req.session.role !== 'admin') return res.status(403).end()
+
+    c.status = 'resolved'
+    c.resolvedBy = req.session.userId
+    await c.save()
+    res.json(c)
+  })
+```
+
+Yes, the check is duplicated. That's the point. Defense in depth costs
+nothing and bails you out the day someone forgets to mount the middleware on
+a new router.
+
+## 4. Don't roll your own password hashing. Ever.
+
+We used `bcrypt` from day one, which was the only thing in the auth path I
+got right on the first try.
+
+```js
+import bcrypt from 'bcrypt'
+
+const COST = 12  // ~250ms on a free-tier container in 2026
+
+const hash = await bcrypt.hash(plain, COST)
+const ok   = await bcrypt.compare(plain, hash)
+```
+
+Two rules:
+
+- **Never** store, log, or even temporarily hold the plaintext password
+  outside the request handler that received it. No "send the password back
+  on signup for the welcome email" — the plaintext should leave memory the
+  second you have the hash.
+- Tune the cost factor so a single `bcrypt.compare` takes ~250ms. If it's too
+  fast, brute force is cheap. If it's too slow, you'll DOS yourself.
+
+If `bcrypt` ever feels insufficient, `argon2id` is the modern recommendation.
+Don't invent anything.
+
+## 5. The admin UX is the product
+
+This is the lesson that surprised me most. Complaint Forum has maybe 50 user
+sessions a month — and *thousands* of admin actions, because each complaint
+goes through several status changes by the same human operator.
+
+That meant the design hours I spent making the user-facing complaint form
+beautiful were the wrong design hours. The keystrokes-per-task on the admin
+side were where users — and they were the only "users" who used the app
+heavily — actually felt friction.
+
+Things that paid off when I finally invested in the admin UI:
+
+- **Keyboard shortcuts on status changes.** `R` for resolve, `P` for pending,
+  `Esc` to deselect.
+- **Bulk actions.** Select 20 complaints, mark all resolved with one click.
+- **Inline detail view** instead of "click → new page → back". Saves three
+  clicks per item, multiplied by hundreds of items per day.
+
+Whoever uses your app 50 times a day will tell you what to build next. Talk to
+them, then ruthlessly remove clicks.
+
+## What I would do today
+
+If I rebuilt Complaint Forum from scratch tomorrow:
+
+- **Same database choice.** MongoDB is fine for this workload; the flexible
+  schema actually paid off as we added complaint categories.
+- **Different auth stack.** I'd use a hosted solution like [Lucia](https://lucia-auth.com/)
+  or [Auth.js](https://authjs.dev/) rather than roll session middleware myself.
+  Most of the bugs above are pre-solved by these libraries.
+- **TypeScript end to end.** Half of my bugs were undefined fields on a
+  document. Static types would have caught them.
+- **Better email infra from day one.** We sent verification emails from
+  Gmail SMTP, which works until it doesn't. [Resend](https://resend.com/) or
+  [Postmark](https://postmarkapp.com/) for any real deployment.
+
+The pattern I see in every one of these notes is the same: **the boring
+infrastructure decisions matter more than the framework choice.** Pick boring,
+proven things; spend your creativity on the product itself.
+
+— Chandan
