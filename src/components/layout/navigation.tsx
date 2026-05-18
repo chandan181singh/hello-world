@@ -122,9 +122,9 @@ export function Navigation({ onCommandOpen }: NavigationProps) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden"
+            className="overflow-hidden border-t border-[var(--border)] bg-[color-mix(in_oklab,var(--background)_92%,transparent)] backdrop-blur-xl md:hidden"
           >
-            <div className="container-page flex flex-col gap-1 border-t border-[var(--border)] py-4">
+            <div className="container-page flex flex-col gap-1 py-4">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}

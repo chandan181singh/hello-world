@@ -187,7 +187,7 @@ function HeroAvatar() {
             }}
           >
             <Image
-              src="/chandan.png"
+              src={withBase("/chandan.png")}
               alt={site.name}
               fill
               priority
