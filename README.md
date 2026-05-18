@@ -16,6 +16,7 @@
 - **shadcn-style** UI primitives (owned, not vendored)
 - **Sonner** for toasts, **canvas-confetti** for celebrations
 - **cmdk** for the ⌘K command palette
+- **Decap CMS** at `/admin/` — Git-based content management (no DB, no backend)
 
 ## Features
 
@@ -45,29 +46,67 @@ npm install
 npm run dev    # http://localhost:3000
 ```
 
-## Customizing — where to edit what
+## Editing content — two ways
 
-All content lives in `src/data/` as typed config:
+### A. Admin UI (recommended) ⭐
 
-| File | What's inside |
+After the one-time OAuth setup (see `admin-oauth/README.md`), visit:
+
+```
+https://chandan181singh.github.io/hello-world/admin/
+```
+
+Log in with GitHub. You get form-based editing for **everything**:
+
+- **Site** — name, role, company, bio, contact, profile picture, OG image, SEO keywords
+- **Social Links** — add/remove/reorder
+- **Navigation** — menu items
+- **Projects** — all metadata + featured flag, tags, stack, links, highlights
+- **Experience** — work history with bullet points
+- **Education** — schools/colleges
+- **Skills & Interests** — categories + skills with optional Simple Icons slugs
+- **Achievements** — trophies / competitive programming wins
+- **Blog Posts** — rich Markdown editor with images, drafts, tags
+- **Project Case Studies** — MDX bodies for individual project pages
+- **Resume** — upload a new PDF, it replaces the existing one
+- **Images** — drag & drop into the Markdown editor; saved to `public/uploads/`
+
+Every save commits to the repo on `main` → GitHub Actions rebuilds → live in ~90s. No database, no backend, no cold starts. **You can edit from your phone.**
+
+### B. Edit the files directly
+
+All content lives in JSON / MDX. The admin UI just edits the same files for you.
+
+| File / Folder | What it controls |
 |---|---|
-| `src/data/site.ts` | Name, role, email, socials, nav links |
-| `src/data/experience.ts` | Work history (timeline) |
-| `src/data/education.ts` | Schools / colleges |
-| `src/data/skills.ts` | Tech stack grid |
-| `src/data/projects.ts` | Project metadata + featured order |
-| `src/data/achievements.ts` | Trophies / awards |
+| `src/data/json/site.json` | Profile, contact, SEO |
+| `src/data/json/socials.json` | Social links |
+| `src/data/json/nav.json` | Top-nav menu |
+| `src/data/json/projects.json` | Projects |
+| `src/data/json/experiences.json` | Work history |
+| `src/data/json/education.json` | Schools / colleges |
+| `src/data/json/skills.json` | Skills + interests |
+| `src/data/json/achievements.json` | Achievements |
+| `src/content/blog/*.mdx` | Blog posts |
+| `src/content/projects/*.mdx` | Project case studies |
+| `public/resume.pdf` | Resume download |
+| `public/uploads/` | Image uploads from the admin UI |
 
-Long-form content lives in `src/content/`:
-
-- `src/content/projects/<slug>.mdx` — project case studies
-- `src/content/blog/<slug>.mdx` — blog posts
-
-To **add a project**: drop an object into `src/data/projects.ts`, optionally create a matching `.mdx` in `src/content/projects/`.
-
-To **add a blog post**: just create `src/content/blog/my-post.mdx` with frontmatter.
+The TypeScript files in `src/data/` are thin wrappers that re-export the JSON — leave them alone unless you're adding a brand-new field.
 
 To **change the color palette**: edit the CSS variables in `src/app/globals.css` (look for `--color-primary` etc.). They cascade through the whole site.
+
+## Admin / CMS setup (one-time, ~15 min)
+
+The admin UI at `/admin/` uses [Decap CMS](https://decapcms.org) with GitHub OAuth. To enable login, you need a tiny OAuth proxy. Full instructions live in `admin-oauth/README.md`. Short version:
+
+1. Create a GitHub OAuth App (Settings → Developer settings → OAuth Apps).
+2. Deploy the Cloudflare Worker in `admin-oauth/` (free, ~30 lines, zero cold start).
+3. Set 2 secrets on the Worker: `OAUTH_CLIENT_ID` and `OAUTH_CLIENT_SECRET`.
+4. Update `public/admin/config.yml`'s `base_url` to your Worker URL.
+5. Push. Visit `/admin/`, click "Login with GitHub", you're in.
+
+After that, every save commits to `main`, GitHub Actions deploys, ~90s later the site updates.
 
 ## Guestbook & Comments (Giscus)
 
@@ -127,9 +166,18 @@ src/
 │   ├── blog/             # Blog rendering (MDX components, post card)
 │   └── widgets/          # LeetCode / GitHub / Giscus widgets
 ├── content/              # MDX (projects + blog)
-├── data/                 # Typed site config (source of truth)
+├── data/
+│   ├── json/             # All editable content as JSON (Decap CMS edits here)
+│   └── *.ts              # Thin TS wrappers re-exporting the JSON with types
 ├── lib/                  # Utilities (mdx loader, cn, formatDate)
 └── types/                # Shared TypeScript types
+
+public/
+├── admin/                # Decap CMS UI (index.html + config.yml)
+├── uploads/              # Images uploaded via the admin
+└── resume.pdf            # Resume download
+
+admin-oauth/              # Cloudflare Worker that handles GitHub OAuth login
 ```
 
 ## License

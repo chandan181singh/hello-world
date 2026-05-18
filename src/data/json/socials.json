@@ -1,0 +1,34 @@
+{
+  "socials": [
+    {
+      "platform": "github",
+      "label": "GitHub",
+      "href": "https://github.com/chandan181singh",
+      "handle": "@chandan181singh"
+    },
+    {
+      "platform": "linkedin",
+      "label": "LinkedIn",
+      "href": "https://linkedin.com/in/chandan181",
+      "handle": "in/chandan181"
+    },
+    {
+      "platform": "leetcode",
+      "label": "LeetCode",
+      "href": "https://leetcode.com/u/_chandan181_/",
+      "handle": "_chandan181_"
+    },
+    {
+      "platform": "codechef",
+      "label": "CodeChef",
+      "href": "https://www.codechef.com/users/chandan181",
+      "handle": "chandan181"
+    },
+    {
+      "platform": "email",
+      "label": "Email",
+      "href": "mailto:chandan181singh@gmail.com",
+      "handle": "chandan181singh@gmail.com"
+    }
+  ]
+}

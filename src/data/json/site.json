@@ -1,0 +1,29 @@
+{
+  "name": "Chandan Kumar",
+  "shortName": "Chandan",
+  "initials": "CK",
+  "role": "Software Engineer",
+  "company": "Marvell Technology",
+  "location": "India",
+  "tagline": "Building reliable systems, one test at a time.",
+  "bio": "Software Engineer at Marvell Technology working on distributed storage validation. CSE grad from MNNIT Allahabad. I love turning gnarly systems problems into clean automation, and I sneak in some ML on the side.",
+  "email": "chandan181singh@gmail.com",
+  "phone": "+91-6204355528",
+  "url": "https://chandan181singh.github.io/hello-world",
+  "ogImage": "/og/default.png",
+  "resumeUrl": "/resume.pdf",
+  "profileImage": "/chandan.png",
+  "keywords": [
+    "Chandan Kumar",
+    "Software Engineer",
+    "Marvell Technology",
+    "MNNIT Allahabad",
+    "Python",
+    "C++",
+    "Distributed Systems",
+    "PyTest",
+    "Machine Learning",
+    "LeetCode Knight",
+    "Portfolio"
+  ]
+}

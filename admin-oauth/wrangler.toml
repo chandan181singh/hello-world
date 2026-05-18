@@ -1,0 +1,10 @@
+name = "decap-oauth"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# After deploy, set secrets:
+#   wrangler secret put OAUTH_CLIENT_ID
+#   wrangler secret put OAUTH_CLIENT_SECRET
+#
+# And lock postMessage to your origin:
+#   wrangler vars push OAUTH_ALLOWED_ORIGIN "https://chandan181singh.github.io"

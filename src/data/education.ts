@@ -1,28 +1,4 @@
 import type { Education } from "@/types";
+import data from "./json/education.json";
 
-export const education: Education[] = [
-  {
-    id: "mnnit",
-    institution: "Motilal Nehru National Institute of Technology Allahabad",
-    degree: "Bachelor of Technology",
-    field: "Computer Science and Engineering",
-    start: "2021",
-    end: "2025",
-    score: "CPI 8.23",
-    location: "Prayagraj, India",
-    highlights: [
-      "Coursework: Data Structures, Algorithms, Operating Systems, DBMS, Distributed Systems, Computer Networks, OOP.",
-      "Active in competitive programming and open source contributions.",
-    ],
-  },
-  {
-    id: "school",
-    institution: "St John Senior Secondary School, Dumraon",
-    degree: "Class XII (CBSE)",
-    field: "Science (PCM)",
-    start: "2018",
-    end: "2020",
-    score: "92.2%",
-    location: "Dumraon, India",
-  },
-];
+export const education: Education[] = data.education ?? [];

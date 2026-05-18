@@ -1,0 +1,10 @@
+{
+  "links": [
+    { "label": "Home", "href": "/" },
+    { "label": "Projects", "href": "/projects" },
+    { "label": "Blog", "href": "/blog" },
+    { "label": "Achievements", "href": "/achievements" },
+    { "label": "Uses", "href": "/uses" },
+    { "label": "Guestbook", "href": "/guestbook" }
+  ]
+}

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Github, Linkedin, Mail, Code2, Trophy } from "lucide-react";
+import { Github, Linkedin, Mail, Code2, Trophy, Lock } from "lucide-react";
 import { site, socials, navLinks } from "@/data/site";
+import { withBase } from "@/lib/utils";
 
 const platformIcon = {
   github: Github,
@@ -91,10 +92,21 @@ export function Footer() {
           <p>
             © {year} {site.name}. Built with Next.js & shipped from GitHub.
           </p>
-          <p className="font-mono">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-lime)] align-middle" />{" "}
-            available for cool projects
-          </p>
+          <div className="flex items-center gap-4 font-mono">
+            <a
+              href={withBase("/admin/")}
+              className="inline-flex items-center gap-1 opacity-60 transition-opacity hover:opacity-100"
+              aria-label="Admin"
+              title="Admin (authorized users only)"
+            >
+              <Lock className="h-3 w-3" />
+              <span>admin</span>
+            </a>
+            <p>
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-lime)] align-middle" />{" "}
+              available for cool projects
+            </p>
+          </div>
         </div>
       </div>
     </footer>
