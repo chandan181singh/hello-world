@@ -159,7 +159,7 @@ function HeroAvatar() {
       initial={{ opacity: 0, scale: 0.9, rotate: -3 }}
       animate={{ opacity: 1, scale: 1, rotate: 0 }}
       transition={{ duration: 0.8, delay: 0.15, ease: [0.2, 0.65, 0.3, 0.9] }}
-      className="relative mx-auto hidden aspect-square w-full max-w-sm md:block"
+      className="relative mx-auto hidden w-full max-w-sm md:block"
     >
       <div
         className="absolute inset-0 rounded-[2rem] blur-3xl"

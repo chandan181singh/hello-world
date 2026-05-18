@@ -114,20 +114,7 @@
 }
 
 @layer utilities {
-  .text-gradient {
-    background: linear-gradient(
-      120deg,
-      var(--color-primary) 0%,
-      var(--color-accent) 50%,
-      var(--color-cyan) 100%
-    );
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    background-size: 200% 200%;
-    animation: gradient-shift 8s ease infinite;
-  }
-
+  .text-gradient,
   .text-gradient-static {
     background: linear-gradient(
       120deg,
@@ -138,6 +125,15 @@
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
+    /* Give descenders (g, y, p, q) room so background-clip:text doesn't crop them. */
+    padding-bottom: 0.15em;
+    margin-bottom: -0.15em;
+    line-height: 1.15;
+  }
+
+  .text-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
   }
 
   .bg-grid {
