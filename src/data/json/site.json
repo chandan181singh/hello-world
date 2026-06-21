@@ -10,9 +10,9 @@
   "email": "chandan181singh@gmail.com",
   "phone": "+91-6204355528",
   "url": "https://chandan181singh.github.io/hello-world",
-  "ogImage": "/og/default.png",
-  "resumeUrl": "/resume.pdf",
   "profileImage": "/chandan.png",
+  "resumeUrl": "/hello-world/uploads/resume_chandan.pdf",
+  "ogImage": "/og/default.png",
   "keywords": [
     "Chandan Kumar",
     "Software Engineer",
